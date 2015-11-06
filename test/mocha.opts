@@ -1,0 +1,5 @@
+--require blanket
+--require espower-coffee/guess
+--compilers coffee:coffee-script/register
+--recursive
+--reporter mocha-multi
