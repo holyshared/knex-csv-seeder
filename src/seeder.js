@@ -10,6 +10,7 @@ export default function seeder(tableName, filePath, encoding = 'utf8') {
 
       let parser = parse({
         delimiter: ',',
+        skip_empty_lines: true,
         auto_parse: true
       });
 
@@ -22,6 +23,10 @@ export default function seeder(tableName, filePath, encoding = 'utf8') {
       parser.on('readable', () => {
         let obj = {};
         let record = parser.read();
+
+        if (record === null) {
+          return;
+        }
 
         if (parser.count <= 1) {
           headers = record;
