@@ -8,7 +8,8 @@ Create a seed file for Knex.
 
 	knex seed:make seed_name
 
-Change the code to import the data from CSV.
+Change the code to import the data from CSV.  
+Please refer to [the link](https://raw.githubusercontent.com/holyshared/knex-csv-seeder/master/test/fixtures/users_utf8.csv) format of the file.
 
 ```js
 import seeder from 'knex-csv-seeder';
