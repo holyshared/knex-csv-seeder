@@ -1,8 +1,8 @@
 {
   "name": "knex-csv-seeder",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "0.1.0",
+  "description": "CSV file seeder for Knex",
+  "main": "lib/seeder.js",
   "scripts": {
     "test": "multi='dot=- mocha-lcov-reporter=lcov-report.lcov' ./node_modules/.bin/mocha test",
     "build": "./node_modules/.bin/babel -d lib -s inline src",
