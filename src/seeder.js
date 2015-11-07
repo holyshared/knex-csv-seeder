@@ -1,23 +1,27 @@
 import fs from 'fs';
 import parse from 'csv-parse';
 import iconv from 'iconv-lite';
+import { EventEmitter } from 'events';
 
-export default function seeder(tableName, filePath, encoding = 'utf8') {
+export const seeder = {
+  seed(options) {
+    return (knex, Promise) => {
+      return new Promise((resolve, reject) => {
+        KnexSeeder.fromKnexClient(knex)
+          .on('end', resolve)
+          .on('error', reject)
+          .generate(options);
+      });
+    };
+  }
+};
 
-  return (knex, Promise) => {
-    let seeder = new CSVSeeder(knex);
+export default seeder.seed;
 
-    return seeder.createFrom({
-      file: filePath,
-      table: tableName,
-      encoding: encoding
-    });
-  };
+class KnexSeeder extends EventEmitter {
 
-}
-
-export class CSVSeeder {
   constructor(knex) {
+    super();
     this.knex = knex;
     this.headers = [];
     this.queues = [];
@@ -28,21 +32,20 @@ export class CSVSeeder {
       auto_parse: true
     });
   }
-  createFrom(options) {
-    let callback = (resolve, reject) => {
-      this.opts = options || {};
-      this.finish = resolve;
-      this.error = reject;
-      this.parser.on('readable', this.readable.bind(this) );
-      this.parser.on('end', this.end.bind(this) );
-      this.parser.on('error', this.error.bind(this) );
-      this.queues.push( this.knex(this.opts.table).del() );
 
-      let csv = fs.createReadStream(this.opts.file);
-      csv.pipe( iconv.decodeStream(this.opts.encoding) ).pipe(this.parser);
-    };
+  static fromKnexClient(knex) {
+    return new KnexSeeder(knex);
+  }
 
-    return new Promise( callback.bind(this) );
+  generate(options) {
+    this.opts = options || {};
+    this.parser.on('readable', this.readable.bind(this) );
+    this.parser.on('end', this.end.bind(this) );
+    this.parser.on('error', this.error.bind(this) );
+    this.queues.push( this.knex(this.opts.table).del() );
+
+    let csv = fs.createReadStream(this.opts.file);
+    csv.pipe( iconv.decodeStream(this.opts.encoding) ).pipe(this.parser);
   }
 
   readable() {
@@ -60,9 +63,10 @@ export class CSVSeeder {
       this.queues.push( this.knex(this.opts.table).insert(obj) );
     }
   }
-
   end() {
-    this.finish(Promise.join.apply(Promise, this.queues));
+    this.emit('end', Promise.join.apply(Promise, this.queues));
   }
-
-};
+  error(err) {
+    this.emit('error', err);
+  }
+}
