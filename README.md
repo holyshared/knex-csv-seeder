@@ -1,6 +1,9 @@
 # knex-csv-seeder
 
+[![npm version](https://badge.fury.io/js/knex-csv-seeder.svg)](https://badge.fury.io/js/knex-csv-seeder)
 [![Build Status](https://travis-ci.org/holyshared/knex-csv-seeder.svg)](https://travis-ci.org/holyshared/knex-csv-seeder)
+[![codecov.io](https://codecov.io/github/holyshared/knex-csv-seeder/coverage.svg?branch=master)](https://codecov.io/github/holyshared/knex-csv-seeder?branch=master)
+[![Dependency Status](https://www.versioneye.com/user/projects/563d719c4d415e001b00008b/badge.svg?style=flat)](https://www.versioneye.com/user/projects/563d719c4d415e001b00008b)
 
 ## Basic usage
 
