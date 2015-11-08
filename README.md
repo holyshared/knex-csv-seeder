@@ -17,7 +17,11 @@ Please refer to [the link](https://raw.githubusercontent.com/holyshared/knex-csv
 ```js
 import seeder from 'knex-csv-seeder';
 
-exports.seed = seeder('users', '/path/to/users.csv');
+exports.seed = seeder({
+  table: 'users',
+  file: '/path/to/users.csv',
+  // encoding: 'utf8' default encoding
+});
 ```
 
 Execute the seed files.
