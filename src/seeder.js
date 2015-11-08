@@ -37,8 +37,23 @@ class KnexSeeder extends EventEmitter {
     return new KnexSeeder(knex);
   }
 
+  mergeOptions(options) {
+    let opts = options || {};
+    let defaults = {
+      file: null,
+      table: null,
+      encoding: 'utf8'
+    };
+
+    for (let k of Object.keys(opts)) {
+      defaults[k] = opts[k];
+    }
+
+    return defaults;
+  }
+
   generate(options) {
-    this.opts = options || {};
+    this.opts = this.mergeOptions(options);
     this.parser.on('readable', this.readable.bind(this) );
     this.parser.on('end', this.end.bind(this) );
     this.parser.on('error', this.error.bind(this) );
