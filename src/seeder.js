@@ -22,10 +22,10 @@ class KnexSeeder extends EventEmitter {
 
   constructor(knex) {
     super();
+    this.opts = {}; 
     this.knex = knex;
     this.headers = [];
-    this.queues = [];
-    this.opts = {}; 
+    this.records = [];
     this.parser = parse({
       delimiter: ',',
       skip_empty_lines: true,
@@ -57,7 +57,6 @@ class KnexSeeder extends EventEmitter {
     this.parser.on('readable', this.readable.bind(this) );
     this.parser.on('end', this.end.bind(this) );
     this.parser.on('error', this.error.bind(this) );
-    this.queues.push( this.knex(this.opts.table).del() );
 
     let csv = fs.createReadStream(this.opts.file);
     csv.pipe( iconv.decodeStream(this.opts.encoding) ).pipe(this.parser);
@@ -75,11 +74,15 @@ class KnexSeeder extends EventEmitter {
       this.headers = record;
     } else {
       this.headers.forEach((column, i) => { obj[column] = record[i]; });
-      this.queues.push( this.knex(this.opts.table).insert(obj) );
+      this.records.push(obj);
     }
   }
   end() {
-    this.emit('end', Promise.join.apply(Promise, this.queues));
+    const queues = [
+      this.knex(this.opts.table).del(),
+      this.knex(this.opts.table).insert(this.records)
+    ];
+    this.emit('end', Promise.join.apply(Promise, queues));
   }
   error(err) {
     this.emit('error', err);

@@ -12,8 +12,5 @@ describe 'seeder', ->
       deletedCount = res.shift()
       assert.ok deletedCount == 2
 
-      insertedId = res.shift()
-      assert.ok insertedId.shift() == 1
-
-      insertedId = res.shift()
-      assert.ok insertedId.shift() == 2
+      insertedRows = res.shift()
+      assert.ok insertedRows.shift() == 2
