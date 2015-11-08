@@ -3,6 +3,10 @@
   "version": "0.1.1",
   "description": "CSV file seeder for Knex",
   "main": "lib/seeder.js",
+  "files": [
+    "lib/*.js",
+    "README.md"
+  ],
   "scripts": {
     "test": "multi='dot=- mocha-lcov-reporter=lcov-report.lcov' ./node_modules/.bin/mocha test",
     "build": "./node_modules/.bin/babel -d lib -s inline src",
