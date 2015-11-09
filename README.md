@@ -21,6 +21,11 @@ exports.seed = seeder({
   table: 'users',
   file: '/path/to/users.csv',
   // encoding: 'utf8' default encoding
+  // parser: {
+  //   delimiter: ',',
+  //   quote: '"',
+  //   escape: '\\'
+  // }
 });
 ```
 
