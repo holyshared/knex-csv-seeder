@@ -75,7 +75,7 @@ class KnexSeeder extends EventEmitter {
       this.headers = record;
     } else {
       this.headers.forEach((column, i) => {
-        let val = record[i] || null;
+        let val = record[i];
 
         if (typeof val === 'string' && val.toLowerCase() === 'null') {
           val = null;
