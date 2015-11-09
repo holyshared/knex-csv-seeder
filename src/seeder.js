@@ -74,7 +74,14 @@ class KnexSeeder extends EventEmitter {
     if (this.parser.count <= 1) {
       this.headers = record;
     } else {
-      this.headers.forEach((column, i) => { obj[column] = record[i]; });
+      this.headers.forEach((column, i) => {
+        let val = record[i] || null;
+
+        if (typeof val === 'string' && val.toLowerCase() === 'null') {
+          val = null;
+        }
+        obj[column] = val;
+      });
       this.records.push(obj);
     }
   }
