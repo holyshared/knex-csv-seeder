@@ -2,6 +2,7 @@ import fs from 'fs';
 import parse from 'csv-parse';
 import iconv from 'iconv-lite';
 import { EventEmitter } from 'events';
+import { Promise } from 'bluebird';
 
 export const seeder = {
   seed(options) {
@@ -22,7 +23,7 @@ class KnexSeeder extends EventEmitter {
 
   constructor(knex) {
     super();
-    this.opts = {}; 
+    this.opts = {};
     this.knex = knex;
     this.headers = [];
     this.records = [];
