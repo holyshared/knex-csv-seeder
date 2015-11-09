@@ -1,6 +1,7 @@
 import fs from 'fs';
 import parse from 'csv-parse';
 import iconv from 'iconv-lite';
+import _ from 'lodash';
 import { EventEmitter } from 'events';
 import { Promise } from 'bluebird';
 
@@ -27,11 +28,7 @@ class KnexSeeder extends EventEmitter {
     this.knex = knex;
     this.headers = [];
     this.records = [];
-    this.parser = parse({
-      delimiter: ',',
-      skip_empty_lines: true,
-      auto_parse: true
-    });
+    this.parser = null;
   }
 
   static fromKnexClient(knex) {
@@ -43,18 +40,22 @@ class KnexSeeder extends EventEmitter {
     let defaults = {
       file: null,
       table: null,
-      encoding: 'utf8'
+      encoding: 'utf8',
+      parser: {
+        delimiter: ',',
+        quote: '"',
+        escape: '\\',
+        skip_empty_lines: true,
+        auto_parse: true
+      }
     };
 
-    for (let k of Object.keys(opts)) {
-      defaults[k] = opts[k];
-    }
-
-    return defaults;
+    return _.merge({}, defaults, opts);
   }
 
   generate(options) {
     this.opts = this.mergeOptions(options);
+    this.parser = parse(this.opts.parser);
     this.parser.on('readable', this.readable.bind(this) );
     this.parser.on('end', this.end.bind(this) );
     this.parser.on('error', this.error.bind(this) );
