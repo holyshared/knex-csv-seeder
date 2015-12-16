@@ -75,15 +75,7 @@ class KnexSeeder extends EventEmitter {
     if (this.parser.count <= 1) {
       this.headers = record;
     } else {
-      this.headers.forEach((column, i) => {
-        let val = record[i];
-
-        if (typeof val === 'string' && val.toLowerCase() === 'null') {
-          val = null;
-        }
-        obj[column] = val;
-      });
-      this.records.push(obj);
+      this.records.push( this.createObjectFrom(record) );
     }
   }
   end() {
@@ -92,6 +84,19 @@ class KnexSeeder extends EventEmitter {
       this.knex(this.opts.table).insert(this.records)
     ];
     this.emit('end', Promise.join.apply(Promise, queues));
+  }
+  createObjectFrom(record) {
+    let obj = {};
+
+    this.headers.forEach((column, i) => {
+      let val = record[i];
+
+      if (typeof val === 'string' && val.toLowerCase() === 'null') {
+        val = null;
+      }
+      obj[column] = val;
+    });
+    return obj;
   }
   error(err) {
     this.emit('error', err);
