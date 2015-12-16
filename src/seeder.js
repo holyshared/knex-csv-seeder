@@ -43,6 +43,7 @@ class KnexSeeder extends EventEmitter {
       file: null,
       table: null,
       encoding: 'utf8',
+      recordsPerQuery: 100,
       parser: {
         delimiter: ',',
         quote: '"',
@@ -83,7 +84,7 @@ class KnexSeeder extends EventEmitter {
       this.records.push( this.createObjectFrom(record) );
     }
 
-    if (this.records.length < 100) { //TODO add options
+    if (this.records.length < this.opts.recordsPerQuery) { //TODO add options
       return;
     }
     this.queue = this.queue.then( this.createQueue() );
@@ -99,7 +100,7 @@ class KnexSeeder extends EventEmitter {
   createQueue() {
     return () => {
       return this.knex(this.opts.table)
-        .insert(this.records.splice(0, 100))
+        .insert(this.records.splice(0, this.opts.recordsPerQuery))
         .then(this.stackResult.bind(this));
     };
   }
