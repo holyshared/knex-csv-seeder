@@ -29,6 +29,8 @@ class KnexSeeder extends EventEmitter {
     this.headers = [];
     this.records = [];
     this.parser = null;
+    this.queue = null;
+    this.results = [];
   }
 
   static fromKnexClient(knex) {
@@ -55,6 +57,9 @@ class KnexSeeder extends EventEmitter {
 
   generate(options) {
     this.opts = this.mergeOptions(options);
+    this.queue = Promise.bind(this).then(() => {
+      return this.knex(this.opts.table).del().then(this.stackResult.bind(this));
+    });
     this.parser = parse(this.opts.parser);
     this.parser.on('readable', this.readable.bind(this) );
     this.parser.on('end', this.end.bind(this) );
@@ -77,13 +82,26 @@ class KnexSeeder extends EventEmitter {
     } else {
       this.records.push( this.createObjectFrom(record) );
     }
+
+    if (this.records.length < 100) { //TODO add options
+      return;
+    }
+    this.queue = this.queue.then( this.createQueue() );
   }
   end() {
-    const queues = [
-      this.knex(this.opts.table).del(),
-      this.knex(this.opts.table).insert(this.records)
-    ];
-    this.emit('end', Promise.join.apply(Promise, queues));
+    if (this.records.length > 0) {
+      this.queue = this.queue.then( this.createQueue() );
+    }
+    this.queue.then(() => {
+      return this.emit('end', this.results);
+    });
+  }
+  createQueue() {
+    return () => {
+      return this.knex(this.opts.table)
+        .insert(this.records.splice(0, 100))
+        .then(this.stackResult.bind(this));
+    };
   }
   createObjectFrom(record) {
     let obj = {};
@@ -97,6 +115,9 @@ class KnexSeeder extends EventEmitter {
       obj[column] = val;
     });
     return obj;
+  }
+  stackResult(res) {
+    this.results.push(res);
   }
   error(err) {
     this.emit('error', err);
