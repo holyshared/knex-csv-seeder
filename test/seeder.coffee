@@ -59,3 +59,18 @@ describe 'seeder', ->
 
         insertedRows = res.shift()
         assert.ok insertedRows.shift() == 300
+
+  context 'when 100000 lines of csv file', ->
+    beforeEach ->
+      knex('users').del()
+
+    it 'import the seed', ->
+      @timeout 60000
+
+      @seeder = seeder(table: 'users', file: __dirname + '/fixtures/100000_users_utf8.csv', encoding: 'utf8')
+      @seeder(knex, Promise).then (res) ->
+        deletedCount = res.shift()
+        assert.ok deletedCount == 0
+
+        insertedRows = res.pop()
+        assert.ok insertedRows.shift() == 100000
