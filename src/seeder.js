@@ -61,12 +61,12 @@ class KnexSeeder extends EventEmitter {
     this.queue = Promise.bind(this).then(() => {
       return this.knex(this.opts.table).del()
         .then(this.succeeded.bind(this))
-        .catch(this.error.bind(this));
+        .catch(this.failed.bind(this));
     });
     this.parser = parse(this.opts.parser);
     this.parser.on('readable', this.readable.bind(this) );
     this.parser.on('end', this.end.bind(this) );
-    this.parser.on('error', this.error.bind(this) );
+    this.parser.on('error', this.failed.bind(this) );
 
     this.csv = fs.createReadStream(this.opts.file);
     this.csv.pipe( iconv.decodeStream(this.opts.encoding) ).pipe(this.parser);
@@ -107,7 +107,7 @@ class KnexSeeder extends EventEmitter {
       return this.knex(this.opts.table)
         .insert(records)
         .then(this.succeeded.bind(this))
-        .catch(this.error.bind(this));
+        .catch(this.failed.bind(this));
     };
   }
   createObjectFrom(record) {
@@ -126,8 +126,9 @@ class KnexSeeder extends EventEmitter {
   succeeded(res) {
     this.results.push(res);
   }
-  error(err) {
+  failed(err) {
     this.csv.end();
+    this.csv.unpipe();
     this.emit('error', err);
   }
 }
