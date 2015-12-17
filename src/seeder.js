@@ -58,15 +58,13 @@ class KnexSeeder extends EventEmitter {
 
   generate(options) {
     this.opts = this.mergeOptions(options);
-    this.queue = Promise.bind(this).then(() => {
-      return this.knex(this.opts.table).del()
-        .then(this.succeeded.bind(this))
-        .catch(this.failed.bind(this));
-    });
+
     this.parser = parse(this.opts.parser);
     this.parser.on('readable', this.readable.bind(this) );
     this.parser.on('end', this.end.bind(this) );
     this.parser.on('error', this.failed.bind(this) );
+
+    this.queue = Promise.bind(this).then( this.createCleanUpQueue() );
 
     this.csv = fs.createReadStream(this.opts.file);
     this.csv.pipe( iconv.decodeStream(this.opts.encoding) ).pipe(this.parser);
@@ -90,17 +88,24 @@ class KnexSeeder extends EventEmitter {
       return;
     }
 
-    this.queue = this.queue.then( this.createQueue() );
+    this.queue = this.queue.then( this.createBulkInsertQueue() );
   }
   end() {
     if (this.records.length > 0) {
-      this.queue = this.queue.then( this.createQueue() );
+      this.queue = this.queue.then( this.createBulkInsertQueue() );
     }
     this.queue.then(() => {
       return this.emit('end', this.results);
     });
   }
-  createQueue() {
+  createCleanUpQueue() {
+    return () => {
+      return this.knex(this.opts.table).del()
+        .then(this.succeeded.bind(this))
+        .catch(this.failed.bind(this));
+    };
+  }
+  createBulkInsertQueue() {
     const records = this.records.splice(0, this.opts.recordsPerQuery);
 
     return () => {
