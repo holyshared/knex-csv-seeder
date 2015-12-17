@@ -132,7 +132,6 @@ class KnexSeeder extends EventEmitter {
     this.results.push(res);
   }
   failed(err) {
-    this.csv.end();
     this.csv.unpipe();
     this.emit('error', err);
   }
