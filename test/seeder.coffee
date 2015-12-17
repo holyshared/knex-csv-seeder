@@ -30,7 +30,7 @@ describe 'seeder', ->
           knex('users').insert id: 2, name: 'bar'
         ]
 
-    it 'import the seed', ->
+    it 'import the seed failed', ->
       @timeout 10000
 
       @seeder = seeder(table: 'users', file: __dirname + '/fixtures/invalid_users_utf8.csv', encoding: 'utf8')
