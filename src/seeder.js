@@ -29,6 +29,12 @@ class KnexSeeder extends EventEmitter {
     this.headers = [];
     this.records = [];
     this.parser = null;
+    this.queue = null;
+    this.results = [];
+    this.onReadable = this.onReadable.bind(this);
+    this.onEnd = this.onEnd.bind(this);
+    this.onSucceeded = this.onSucceeded.bind(this);
+    this.onFailed = this.onFailed.bind(this);
   }
 
   static fromKnexClient(knex) {
@@ -41,6 +47,7 @@ class KnexSeeder extends EventEmitter {
       file: null,
       table: null,
       encoding: 'utf8',
+      recordsPerQuery: 100,
       parser: {
         delimiter: ',',
         quote: '"',
@@ -55,16 +62,19 @@ class KnexSeeder extends EventEmitter {
 
   generate(options) {
     this.opts = this.mergeOptions(options);
-    this.parser = parse(this.opts.parser);
-    this.parser.on('readable', this.readable.bind(this) );
-    this.parser.on('end', this.end.bind(this) );
-    this.parser.on('error', this.error.bind(this) );
 
-    let csv = fs.createReadStream(this.opts.file);
-    csv.pipe( iconv.decodeStream(this.opts.encoding) ).pipe(this.parser);
+    this.parser = parse(this.opts.parser);
+    this.parser.on('readable', this.onReadable);
+    this.parser.on('end', this.onEnd);
+    this.parser.on('error', this.onFailed);
+
+    this.queue = Promise.bind(this).then( this.createCleanUpQueue() );
+
+    this.csv = fs.createReadStream(this.opts.file);
+    this.csv.pipe( iconv.decodeStream(this.opts.encoding) ).pipe(this.parser);
   }
 
-  readable() {
+  onReadable() {
     let obj = {};
     let record = this.parser.read();
 
@@ -75,25 +85,58 @@ class KnexSeeder extends EventEmitter {
     if (this.parser.count <= 1) {
       this.headers = record;
     } else {
-      this.headers.forEach((column, i) => {
-        let val = record[i];
-
-        if (typeof val === 'string' && val.toLowerCase() === 'null') {
-          val = null;
-        }
-        obj[column] = val;
-      });
-      this.records.push(obj);
+      this.records.push( this.createObjectFrom(record) );
     }
+
+    if (this.records.length < this.opts.recordsPerQuery) {
+      return;
+    }
+
+    this.queue = this.queue.then( this.createBulkInsertQueue() );
   }
-  end() {
-    const queues = [
-      this.knex(this.opts.table).del(),
-      this.knex(this.opts.table).insert(this.records)
-    ];
-    this.emit('end', Promise.join.apply(Promise, queues));
+  onEnd() {
+    if (this.records.length > 0) {
+      this.queue = this.queue.then( this.createBulkInsertQueue() );
+    }
+    this.queue.then(() => {
+      return this.emit('end', this.results);
+    }).catch(this.onFailed);
   }
-  error(err) {
+  createCleanUpQueue() {
+    return () => {
+      return this.knex(this.opts.table).del()
+        .then(this.onSucceeded)
+        .catch(this.onFailed);
+    };
+  }
+  createBulkInsertQueue() {
+    const records = this.records.splice(0, this.opts.recordsPerQuery);
+
+    return () => {
+      return this.knex(this.opts.table)
+        .insert(records)
+        .then(this.onSucceeded)
+        .catch(this.onFailed);
+    };
+  }
+  createObjectFrom(record) {
+    let obj = {};
+
+    this.headers.forEach((column, i) => {
+      let val = record[i];
+
+      if (typeof val === 'string' && val.toLowerCase() === 'null') {
+        val = null;
+      }
+      obj[column] = val;
+    });
+    return obj;
+  }
+  onSucceeded(res) {
+    this.results.push(res);
+  }
+  onFailed(err) {
+    this.csv.unpipe();
     this.emit('error', err);
   }
 }
