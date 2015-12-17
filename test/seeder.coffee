@@ -1,6 +1,8 @@
 describe 'seeder', ->
   context 'when 2 lines of csv file', ->
     beforeEach ->
+      @timeout 10000
+
       knex('users').del().then ->
         Promise.all [
           knex('users').insert id: 1, name: 'foo'
@@ -8,6 +10,8 @@ describe 'seeder', ->
         ]
 
     it 'import the seed', ->
+      @timeout 10000
+
       @seeder = seeder(table: 'users', file: __dirname + '/fixtures/users_utf8.csv', encoding: 'utf8')
       @seeder(knex, Promise).then (res) ->
         deletedCount = res.shift()
@@ -18,6 +22,8 @@ describe 'seeder', ->
 
   context 'when 2 lines of invalid csv file', ->
     beforeEach ->
+      @timeout 10000
+
       knex('users').del().then ->
         Promise.all [
           knex('users').insert id: 1, name: 'foo'
@@ -25,6 +31,8 @@ describe 'seeder', ->
         ]
 
     it 'import the seed', ->
+      @timeout 10000
+
       @seeder = seeder(table: 'users', file: __dirname + '/fixtures/invalid_users_utf8.csv', encoding: 'utf8')
       @seeder(knex, Promise).then (res) ->
         throw new Error('succeeded') # name column is not null
