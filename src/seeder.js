@@ -96,7 +96,7 @@ class KnexSeeder extends EventEmitter {
     }
     this.queue.then(() => {
       return this.emit('end', this.results);
-    });
+    }).catch(this.failed.bind(this));
   }
   createCleanUpQueue() {
     return () => {
