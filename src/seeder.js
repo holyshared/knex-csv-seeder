@@ -31,6 +31,10 @@ class KnexSeeder extends EventEmitter {
     this.parser = null;
     this.queue = null;
     this.results = [];
+    this.onReadable = this.onReadable.bind(this);
+    this.onEnd = this.onEnd.bind(this);
+    this.onSucceeded = this.onSucceeded.bind(this);
+    this.onFailed = this.onFailed.bind(this);
   }
 
   static fromKnexClient(knex) {
@@ -60,9 +64,9 @@ class KnexSeeder extends EventEmitter {
     this.opts = this.mergeOptions(options);
 
     this.parser = parse(this.opts.parser);
-    this.parser.on('readable', this.readable.bind(this) );
-    this.parser.on('end', this.end.bind(this) );
-    this.parser.on('error', this.failed.bind(this) );
+    this.parser.on('readable', this.onReadable);
+    this.parser.on('end', this.onEnd);
+    this.parser.on('error', this.onFailed);
 
     this.queue = Promise.bind(this).then( this.createCleanUpQueue() );
 
@@ -70,7 +74,7 @@ class KnexSeeder extends EventEmitter {
     this.csv.pipe( iconv.decodeStream(this.opts.encoding) ).pipe(this.parser);
   }
 
-  readable() {
+  onReadable() {
     let obj = {};
     let record = this.parser.read();
 
@@ -90,19 +94,19 @@ class KnexSeeder extends EventEmitter {
 
     this.queue = this.queue.then( this.createBulkInsertQueue() );
   }
-  end() {
+  onEnd() {
     if (this.records.length > 0) {
       this.queue = this.queue.then( this.createBulkInsertQueue() );
     }
     this.queue.then(() => {
       return this.emit('end', this.results);
-    }).catch(this.failed.bind(this));
+    }).catch(this.onFailed);
   }
   createCleanUpQueue() {
     return () => {
       return this.knex(this.opts.table).del()
-        .then(this.succeeded.bind(this))
-        .catch(this.failed.bind(this));
+        .then(this.onSucceeded)
+        .catch(this.onFailed);
     };
   }
   createBulkInsertQueue() {
@@ -111,8 +115,8 @@ class KnexSeeder extends EventEmitter {
     return () => {
       return this.knex(this.opts.table)
         .insert(records)
-        .then(this.succeeded.bind(this))
-        .catch(this.failed.bind(this));
+        .then(this.onSucceeded)
+        .catch(this.onFailed);
     };
   }
   createObjectFrom(record) {
@@ -128,10 +132,10 @@ class KnexSeeder extends EventEmitter {
     });
     return obj;
   }
-  succeeded(res) {
+  onSucceeded(res) {
     this.results.push(res);
   }
-  failed(err) {
+  onFailed(err) {
     this.csv.unpipe();
     this.emit('error', err);
   }
