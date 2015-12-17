@@ -1,6 +1,6 @@
 {
   "name": "knex-csv-seeder",
-  "version": "0.2.5",
+  "version": "0.3.0",
   "description": "CSV file seeder for Knex",
   "main": "lib/seeder.js",
   "files": [
