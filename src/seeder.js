@@ -59,15 +59,17 @@ class KnexSeeder extends EventEmitter {
   generate(options) {
     this.opts = this.mergeOptions(options);
     this.queue = Promise.bind(this).then(() => {
-      return this.knex(this.opts.table).del().then(this.stackResult.bind(this));
+      return this.knex(this.opts.table).del()
+        .then(this.succeeded.bind(this))
+        .catch(this.error.bind(this));
     });
     this.parser = parse(this.opts.parser);
     this.parser.on('readable', this.readable.bind(this) );
     this.parser.on('end', this.end.bind(this) );
     this.parser.on('error', this.error.bind(this) );
 
-    let csv = fs.createReadStream(this.opts.file);
-    csv.pipe( iconv.decodeStream(this.opts.encoding) ).pipe(this.parser);
+    this.csv = fs.createReadStream(this.opts.file);
+    this.csv.pipe( iconv.decodeStream(this.opts.encoding) ).pipe(this.parser);
   }
 
   readable() {
@@ -84,9 +86,10 @@ class KnexSeeder extends EventEmitter {
       this.records.push( this.createObjectFrom(record) );
     }
 
-    if (this.records.length < this.opts.recordsPerQuery) { //TODO add options
+    if (this.records.length < this.opts.recordsPerQuery) {
       return;
     }
+
     this.queue = this.queue.then( this.createQueue() );
   }
   end() {
@@ -98,10 +101,13 @@ class KnexSeeder extends EventEmitter {
     });
   }
   createQueue() {
+    const records = this.records.splice(0, this.opts.recordsPerQuery);
+
     return () => {
       return this.knex(this.opts.table)
-        .insert(this.records.splice(0, this.opts.recordsPerQuery))
-        .then(this.stackResult.bind(this));
+        .insert(records)
+        .then(this.succeeded.bind(this))
+        .catch(this.error.bind(this));
     };
   }
   createObjectFrom(record) {
@@ -117,10 +123,11 @@ class KnexSeeder extends EventEmitter {
     });
     return obj;
   }
-  stackResult(res) {
+  succeeded(res) {
     this.results.push(res);
   }
   error(err) {
+    this.csv.end();
     this.emit('error', err);
   }
 }
