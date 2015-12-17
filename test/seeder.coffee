@@ -20,7 +20,7 @@ describe 'seeder', ->
         insertedRows = res.shift()
         assert.ok insertedRows.shift() == 2
 
-  context 'when 2 lines of invalid csv file', ->
+  context 'when 1 lines of invalid csv file', ->
     beforeEach ->
       @timeout 10000
 
