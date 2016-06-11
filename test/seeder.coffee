@@ -30,6 +30,9 @@ describe 'seeder', ->
           knex('users').insert id: 2, name: 'bar'
         ]
 
+    afterEach ->
+      knex('users').del()
+
     it 'import the seed failed', ->
       @timeout 10000
 
